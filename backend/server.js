@@ -1,39 +1,83 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+const http = require('http'); // Serveur HTTP natif
+const socketIo = require('socket.io'); // Socket.IO pour WebSocket
+const fs = require('fs'); // Module pour lire les fichiers
+const path = require('path'); // Module pour gérer les chemins de fichiers
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
-// Liste des messages pour la PoC
-let messages = [];
-
-// Route pour servir le frontend
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+// Créer un serveur HTTP natif
+const server = http.createServer((req, res) => {
+  // Gestion des routes
+  if (req.url === '/' && req.method === 'GET') {
+    // Servir le fichier HTML
+    const filePath = path.join(__dirname, '../frontend/index.html');
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Erreur interne du serveur');
+      } else {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(data);
+      }
+    });
+  } else if (req.url.startsWith('/static/') && req.method === 'GET') {
+    // Servir les fichiers statiques (CSS, JS)
+    const filePath = path.join(__dirname, '../frontend', req.url.replace('/static/', ''));
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Fichier non trouvé');
+      } else {
+        const ext = path.extname(filePath);
+        const mimeTypes = {
+          '.css': 'text/css',
+          '.js': 'application/javascript',
+        };
+        res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/plain' });
+        res.end(data);
+      }
+    });
+  } else {
+    // Réponse par défaut pour les autres routes
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Page non trouvée');
+  }
 });
 
-// Gestion des connexions via WebSocket
+// Initialisation de Socket.IO avec le serveur HTTP
+const io = socketIo(server);
+
+// Stockage des messages en mémoire
+let messages = [];
+
+// Gestion des connexions WebSocket
 io.on('connection', (socket) => {
   console.log('Un utilisateur est connecté');
 
-  // Envoi des messages existants à l'utilisateur
-  socket.emit('previousMessages', messages);
+  // Initialisation du rôle de l'utilisateur
+  let role = 'client';
 
-  // Réception des messages et diffusion
-  socket.on('sendMessage', (msg) => {
-    messages.push(msg);
-    io.emit('newMessage', msg); // Diffuse à tous les utilisateurs
+  // Réception du rôle de l'utilisateur
+  socket.on('setRole', (userRole) => {
+    role = userRole;
+    console.log(`Le rôle attribué est : ${role}`);
   });
 
-  // Déconnexion
+  // Envoi des messages existants
+  socket.emit('previousMessages', messages);
+
+  // Réception d'un message
+  socket.on('sendMessage', (msg) => {
+    const messageData = { role, msg };
+    messages.push(messageData);
+    io.emit('newMessage', messageData); // Diffusion à tous
+  });
+
+  // Gestion de la déconnexion
   socket.on('disconnect', () => {
     console.log('Un utilisateur s’est déconnecté');
   });
 });
 
-// Démarrer le serveur
+// Démarrage du serveur
 const PORT = 3000;
 server.listen(PORT, () => {
   console.log(`Serveur démarré sur http://localhost:${PORT}`);

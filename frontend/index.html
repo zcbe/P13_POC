@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat PoC</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <h1>Chat en ligne avec le support</h1>
+  <div id="roleSelection">
+    <button onclick="setRole('client')">Je suis un Client</button>
+    <button onclick="setRole('support')">Je suis le Support</button>
+  </div>
+  <div id="chat" style="display: none;">
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Votre message">
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+</body>
+</html>
