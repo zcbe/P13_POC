@@ -7,7 +7,7 @@ const path = require('path'); // Module pour gérer les chemins de fichiers
 const server = http.createServer((req, res) => {
   // Gestion des routes
   if (req.url === '/' && req.method === 'GET') {
-    // Servir le fichier HTML
+    // Servir le fichier HTML principal
     const filePath = path.join(__dirname, '../frontend/index.html');
     fs.readFile(filePath, (err, data) => {
       if (err) {
@@ -19,8 +19,8 @@ const server = http.createServer((req, res) => {
       }
     });
   } else if (req.url.startsWith('/static/') && req.method === 'GET') {
-    // Servir les fichiers statiques (CSS, JS)
-    const filePath = path.join(__dirname, '../frontend', req.url.replace('/static/', ''));
+    // Servir les fichiers statiques depuis le dossier frontend/static/
+    const filePath = path.join(__dirname, '../frontend', req.url);
     fs.readFile(filePath, (err, data) => {
       if (err) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
